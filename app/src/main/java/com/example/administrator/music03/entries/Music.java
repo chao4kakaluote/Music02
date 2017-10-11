@@ -14,6 +14,8 @@ public class Music extends DataSupport implements Serializable
     private int ImageId;
     private String musicName;
     private String words;
+    private Music pre;
+    private Music next;
     public void setId(int id) {
         this.id = id;
     }
@@ -46,5 +48,21 @@ public class Music extends DataSupport implements Serializable
         ImageId = imageId;
     }
 
+    public void setPre(Music music)
+    {
+        pre=music;
+    }
+    public void setNext(Music music)
+    {
+        next=music;
+    }
+    public Music getPre()
+    {
+        return pre;
+    }
+    public Music getNext()
+    {
+        return next;
+    }
 
 }

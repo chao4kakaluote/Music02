@@ -103,63 +103,63 @@ public class MusicPlay extends AppCompatActivity
     public void showLrc()
     {
           initViews();
-          initEvents();
+      //    initEvents();
     }
     private void initViews()
     {
         view = (LycicView) findViewById(R.id.view);
     }
-    private void initEvents() {
-        InputStream is = getResources().openRawResource(R.raw.eason_tenyears);
-        list = new ArrayList<String>();
-        list1 = new ArrayList<>();
-        //得到歌词对象的一个列表
-        lrcs = Utility.redLrc(is);
-        for (int i = 0; i < lrcs.size(); i++)
-        {
-            list.add(lrcs.get(i).getLrc());
-            System.out.println(lrcs.get(i).getLrc() + "=====");
-            list1.add(0l);
-        }
-        //给view设置显示的歌词和时间
-        view.setLyricText(list, list1);
-        //view经过一秒后滚动到第0行。
-        view.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                view.scrollToIndex(0);
-            }
-        }, 1000);
-        //view滚动到相应位置。
-
-        //view滑动时的响应
-        view.setOnLyricScrollChangeListener(new LycicView.OnLyricScrollChangeListener() {
-            @Override
-            public void onLyricScrollChange(final int index, int oldindex)
-            {
-                handler = new Handler(new Handler.Callback()
-                {
-                    @Override
-                    public boolean handleMessage(Message msg)
-                    {
-                        if(msg.what == 1){
-                            lrc_index = index;
-                            if(lrc_index == list.size()){
-                                handler.removeMessages(1);
-                            }
-                            lrc_index++;
-                            view.scrollToIndex(lrc_index);
-                            handler.sendEmptyMessageDelayed(1,4000);
-                        }
-                        return false;
-                    }
-                });
-                handler.sendEmptyMessageDelayed(1,4000);
-            }
-        });
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE|WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-
-    }
+//    private void initEvents() {
+//        InputStream is = getResources().openRawResource(R.raw.eason_tenyears);
+//        list = new ArrayList<String>();
+//        list1 = new ArrayList<>();
+//        //得到歌词对象的一个列表
+//        lrcs = Utility.redLrc(is);
+//        for (int i = 0; i < lrcs.size(); i++)
+//        {
+//            list.add(lrcs.get(i).getLrc());
+//            System.out.println(lrcs.get(i).getLrc() + "=====");
+//            list1.add(0l);
+//        }
+//        //给view设置显示的歌词和时间
+//        view.setLyricText(list, list1);
+//        //view经过一秒后滚动到第0行。
+//        view.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                view.scrollToIndex(0);
+//            }
+//        }, 1000);
+//        //view滚动到相应位置。
+//
+//        //view滑动时的响应
+//        view.setOnLyricScrollChangeListener(new LycicView.OnLyricScrollChangeListener() {
+//            @Override
+//            public void onLyricScrollChange(final int index, int oldindex)
+//            {
+//                handler = new Handler(new Handler.Callback()
+//                {
+//                    @Override
+//                    public boolean handleMessage(Message msg)
+//                    {
+//                        if(msg.what == 1){
+//                            lrc_index = index;
+//                            if(lrc_index == list.size()){
+//                                handler.removeMessages(1);
+//                            }
+//                            lrc_index++;
+//                            view.scrollToIndex(lrc_index);
+//                            handler.sendEmptyMessageDelayed(1,4000);
+//                        }
+//                        return false;
+//                    }
+//                });
+//                handler.sendEmptyMessageDelayed(1,4000);
+//            }
+//        });
+//        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE|WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+//
+//    }
     @Override
     protected void onDestroy()
     {

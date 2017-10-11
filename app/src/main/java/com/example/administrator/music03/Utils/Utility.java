@@ -42,9 +42,23 @@ public class Utility
                 Music music=new Music();
                 music.setMusicName(files[i].getName());
                 music.setImageId(R.drawable.shenglue);
-                Log.d("fileName",files[i].getName());
                 list.add(music);
             }
+        }
+        if(list.size()==1)
+        {
+            list.get(0).setNext(list.get(0));
+            list.get(0).setPre(list.get(0));
+        }
+        else if(list.size()>1) {
+            for (int i = 0; i < list.size(); i++) {
+                if (i > 0)
+                    list.get(i).setPre(list.get(i - 1));
+                if (i < list.size() - 1)
+                    list.get(i).setNext(list.get(i + 1));
+            }
+            list.get(0).setPre(list.get(list.size()-1));
+            list.get(list.size()-1).setNext(list.get(0));
         }
         return list;
     }
@@ -83,38 +97,7 @@ public class Utility
         client.newCall(request).enqueue(callback);
     }
 
-    public static ArrayList<LrcMusic> redLrc(InputStream in)
-    {
-        ArrayList<LrcMusic> alist = new ArrayList<LrcMusic>();
-        //File f = new File(path.replace(".mp3", ".lrc"));
-        try {
-            //FileInputStream fs = new FileInputStream(f);
-            InputStreamReader input = new InputStreamReader(in, "utf-8");
-            BufferedReader br = new BufferedReader(input);
-            String s = "";
-            while ((s = br.readLine()) != null)
-            {
-                if (!TextUtils.isEmpty(s))
-                {
-                    String lyLrc = s.replace("[", "");
-                    String[] data_ly = lyLrc.split("]");
-                    if (data_ly.length > 1) {
-                        String time = data_ly[0];
-                        String lrc = data_ly[1];
-                        LrcMusic lrcMusic = new LrcMusic(lrcData(time), lrc);
-                        alist.add(lrcMusic);
-                    }
-                }
-            }
-        }
-        catch (FileNotFoundException e)
-        {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return alist;
-    }
+
     public static int lrcData(String time)
     {
         time = time.replace(":", "#");

@@ -3,11 +3,14 @@ package com.example.administrator.music03.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.support.annotation.IdRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -21,6 +24,9 @@ import com.example.administrator.music03.Utils.Utility;
 import com.example.administrator.music03.entries.Music;
 import com.example.administrator.music03.service.MusicPlayService;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +52,7 @@ public class MainActivity1 extends AppCompatActivity
         public void onServiceConnected(ComponentName componentName, IBinder iBinder)
         {
             musicBinder=(MusicPlayService.MusicControl)iBinder;
+            showSetBottomPic();
         }
 
         @Override
@@ -61,7 +68,7 @@ public class MainActivity1 extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main1);
         initView();
-        bindMuscService();
+        bindMusicService();
         initRadioGroup();
     }
     public void initView()
@@ -151,6 +158,16 @@ public class MainActivity1 extends AppCompatActivity
                    }
                });
            }
+           localList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+               @Override
+               public void onItemClick(AdapterView<?> adapterView, View view, int position, long l)
+               {
+                   Intent intent=new Intent(MainActivity1.this,MusicPlay1.class);
+                   Music music= musicLocalData.get(position);
+                   intent.putExtra("music",music);
+                   startActivity(intent);
+               }
+           });
            localList.setAdapter(Localadapter);
     }
 
@@ -161,24 +178,49 @@ public class MainActivity1 extends AppCompatActivity
 
     public void showSetBottomPic()
     {
-        layout.setVisibility(View.VISIBLE);
-        MusicImage.setImageResource(R.drawable.music_disc);
-        MusicImage.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View view)
-            {
-                   Intent intent=new Intent(MainActivity1.this,MusicPlay1.class);
-                   Music music= musicBinder.getMusic();
-                   intent.putExtra("music",music);
-                   startActivity(intent);
+        if(musicBinder.getMusic()!=null) {
+            layout.setVisibility(View.VISIBLE);
+            //看是否存在图片文件，如果存在则设置该图片
+            String path=Utility.localMusicPath+"/album/"+musicBinder.getMusic().getMusicName()+"jpg";
+            File file=new File(path);
+            if(file.exists()) {
+                try {
+                    FileInputStream f = new FileInputStream(Utility.localMusicPath + "/album/" + musicBinder.getMusic().getMusicName() + "jpg");
+                    Bitmap bm = null;
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inSampleSize = 8;//图片的长宽都是原来的1/8
+                    BufferedInputStream bis = new BufferedInputStream(f);
+                    bm = BitmapFactory.decodeStream(bis, null, options);
+                    MusicImage.setImageBitmap(bm);
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
             }
-        });
-    }
 
-    public void bindMuscService()
+            MusicImage.setImageResource(R.drawable.music_disc);
+            MusicImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(MainActivity1.this, MusicPlay1.class);
+                    Music music = musicBinder.getMusic();
+                    intent.putExtra("music", music);
+                    startActivity(intent);
+                }
+            });
+        }
+    }
+    public void bindMusicService()
     {
            Intent intent=new Intent(this,MusicPlayService.class);
+           startService(intent);
            bindService(intent,connection,BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(connection);
     }
 }
