@@ -14,16 +14,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Activity.Login" >
-
-        </activity>
-        <activity android:name=".Activity.MainActivity">
-
-        </activity>
+        <activity android:name=".Activity.Login"></activity>
+        <activity android:name=".Activity.MainActivity"></activity>
         <activity android:name=".Activity.SplashActivity" />
-        <activity android:name=".Activity.MusicPlay" >
-
-        </activity>
+        <activity android:name=".Activity.MusicPlay"></activity>
 
         <service
             android:name=".service.MusicPlayService"
@@ -34,9 +28,15 @@
         <activity android:name=".Activity.MainActivity1">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".service.DownloadService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>

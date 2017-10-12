@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.Binder;
@@ -46,8 +47,6 @@ public class MusicPlayService extends Service
     public static final int NEXT_STATUS=4;
 
 
-
- //   private List<Music> musicList;
     private MusicControl musicControl=null;
     private static Timer timer;
     public boolean isPlaying=false;
@@ -96,33 +95,76 @@ public class MusicPlayService extends Service
              myMediaPlayer.release();
              Play();
          }
-         addTimer();
+         //更新进度条
+        updateProgress();
+         //更新按钮
+        updatePlayButton();
     }
     public void pausePlay()
     {
         myMediaPlayer.pause();
         isPlaying=false;
+        updatePlayButton();
     }
     public void continuePlay()
     {
         myMediaPlayer.start();
         isPlaying=true;
+        updatePlayButton();
     }
     public void playNext()
     {
         setMusic(myMusic.getNext());
         playMusic();
+        Log.d("myMusicName",myMusic.getMusicName());
+        updateLrc();
     }
     public void playPre()
     {
         setMusic(myMusic.getPre());
         playMusic();
+        updateLrc();
     }
     public void seekTo(int progress)
     {
         myMediaPlayer.seekTo(progress);
     }
-    public void addTimer()
+    public void updatePlayButton()
+    {
+        Message message=new Message();
+        if(isPlaying)
+            message.what=1;
+        else
+            message.what=0;
+        final Message msg=message;
+        if(MusicPlay1.playHandler!=null)
+        {
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run() {
+                    MusicPlay1.playHandler.sendMessage(msg);
+                }
+            }).start();
+        }
+    }
+    public void updateLrc()
+    {
+        Message message=new Message();
+        message.what=1;
+        final Message msg=message;
+        if(MusicPlay1.lrcHandler!=null)
+        {
+            new Thread(new Runnable()
+            {
+                @Override
+                public void run() {
+                    MusicPlay1.lrcHandler.sendMessage(msg);
+                }
+            }).start();
+        }
+    }
+    public void updateProgress()
     {
         if(timer==null)
         {
@@ -148,6 +190,55 @@ public class MusicPlayService extends Service
         }
     }
 
+    public void showNotification()
+    {
+        mNotificationManager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+        mBuilder= new NotificationCompat.Builder(this);
+        mRemoteViews=new RemoteViews(getPackageName(), R.layout.notification);
+
+   //     mRemoteViews.setImageViewResource(R.id.notification_image_view,R.drawable.play_disc_halo);
+        mRemoteViews.setTextViewText(R.id.notification_text_view, myMusic.getMusicName());
+        mRemoteViews.setTextColor(R.id.notification_text_view, Color.BLACK);
+
+        //点击的事件处理
+        Intent buttonIntent = new Intent(ACTION_BUTTON);
+		/* 上一首按钮 */
+        buttonIntent.putExtra("buttonId", PRE_STATUS);
+        //这里加了广播，所及INTENT的必须用getBroadcast方法
+        PendingIntent intent_prev = PendingIntent.getBroadcast(this, 1, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        mRemoteViews.setOnClickPendingIntent(R.id.notification_pre, intent_prev);
+		/* 播放/暂停  按钮 */
+        buttonIntent.putExtra("buttonId", PLAY_STATUS);
+        PendingIntent intent_paly = PendingIntent.getBroadcast(this, 2, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        mRemoteViews.setOnClickPendingIntent(R.id.notification_play, intent_paly);
+        /* 播放/暂停  按钮 */
+        buttonIntent.putExtra("buttonId", PAUSE_STATUS);
+        PendingIntent intent_pause = PendingIntent.getBroadcast(this, 3, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        mRemoteViews.setOnClickPendingIntent(R.id.notification_pause, intent_pause);
+		/* 下一首 按钮  */
+        buttonIntent.putExtra("buttonId", NEXT_STATUS);
+        PendingIntent intent_next = PendingIntent.getBroadcast(this, 4, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        mRemoteViews.setOnClickPendingIntent(R.id.notification_next, intent_next);
+        Intent intent=new Intent(this, MainActivity1.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        mBuilder.setContent(mRemoteViews)
+                .setContentIntent(pendingIntent)
+                .setWhen(System.currentTimeMillis())// 通知产生的时间，会在通知信息里显示
+                .setTicker("正在播放")
+                .setPriority(Notification.PRIORITY_DEFAULT)// 设置该通知优先级
+                .setOngoing(true)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(),R.drawable.music_disc));
+        //加载
+        mNotificationManager.notify(1, mBuilder.build());
+    }
+    public void initBroadcastReceiver()
+    {
+        receiver=new ButtonBroadcastReceiver();
+        IntentFilter intentFilter=new IntentFilter();
+        intentFilter.addAction(ACTION_BUTTON);
+        registerReceiver(receiver,intentFilter);
+    }
 
     @Override
     public IBinder onBind(Intent intent)
@@ -190,6 +281,15 @@ public class MusicPlayService extends Service
         {
             MusicPlayService.this.seekTo(progress);
         }
+        public int getDuration()
+        {
+            int duration=0;
+            if(myMediaPlayer!=null && getMusic()!=null)
+            {
+                 duration=myMediaPlayer.getDuration();
+            }
+            return duration;
+        }
 
         public boolean isPlay()
         {
@@ -197,54 +297,7 @@ public class MusicPlayService extends Service
         }
     }
 
-    public void showNotification()
-    {
-         mNotificationManager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-         mBuilder= new NotificationCompat.Builder(this);
-         mRemoteViews=new RemoteViews(getPackageName(), R.layout.notification);
 
-         mRemoteViews.setImageViewResource(R.id.notification_image_view,R.drawable.play_disc_halo);
-         mRemoteViews.setTextViewText(R.id.notification_text_view, myMusic.getMusicName());
-         mRemoteViews.setTextColor(R.id.notification_text_view, Color.BLACK);
-
-        //点击的事件处理
-        Intent buttonIntent = new Intent(ACTION_BUTTON);
-		/* 上一首按钮 */
-        buttonIntent.putExtra("buttonId", PRE_STATUS);
-        //这里加了广播，所及INTENT的必须用getBroadcast方法
-        PendingIntent intent_prev = PendingIntent.getBroadcast(this, 1, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        mRemoteViews.setOnClickPendingIntent(R.id.notification_pre, intent_prev);
-		/* 播放/暂停  按钮 */
-        buttonIntent.putExtra("buttonId", PLAY_STATUS);
-        PendingIntent intent_paly = PendingIntent.getBroadcast(this, 2, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        mRemoteViews.setOnClickPendingIntent(R.id.notification_play, intent_paly);
-        /* 播放/暂停  按钮 */
-        buttonIntent.putExtra("buttonId", PAUSE_STATUS);
-        PendingIntent intent_pause = PendingIntent.getBroadcast(this, 3, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        mRemoteViews.setOnClickPendingIntent(R.id.notification_pause, intent_pause);
-		/* 下一首 按钮  */
-        buttonIntent.putExtra("buttonId", NEXT_STATUS);
-        PendingIntent intent_next = PendingIntent.getBroadcast(this, 4, buttonIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        mRemoteViews.setOnClickPendingIntent(R.id.notification_next, intent_next);
-        Intent intent=new Intent(this, MainActivity1.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        mBuilder.setContent(mRemoteViews)
-                .setContentIntent(pendingIntent)
-                .setWhen(System.currentTimeMillis())// 通知产生的时间，会在通知信息里显示
-                .setTicker("正在播放")
-                .setPriority(Notification.PRIORITY_DEFAULT)// 设置该通知优先级
-                .setOngoing(true)
-                .setSmallIcon(R.mipmap.ic_launcher);
-        //加载
-        mNotificationManager.notify(1, mBuilder.build());
-    }
-    public void initBroadcastReceiver()
-    {
-         receiver=new ButtonBroadcastReceiver();
-         IntentFilter intentFilter=new IntentFilter();
-         intentFilter.addAction(ACTION_BUTTON);
-         registerReceiver(receiver,intentFilter);
-    }
     public class ButtonBroadcastReceiver extends BroadcastReceiver
     {
         @Override

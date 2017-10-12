@@ -1,5 +1,4 @@
 package com.example.administrator.music03.Activity;
-
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -41,9 +40,11 @@ public class MusicPlay1 extends AppCompatActivity
     private LycicView lrcview;
     private ImageView disc;
     private ImageView discBig;
-
     private Music myMusic;
     private MusicPlayService.MusicControl musicBinder=null;
+
+    //判断是否初始化过歌词的显示
+    private boolean isInitLrc=false;
     private ServiceConnection connection=new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder)
@@ -54,13 +55,14 @@ public class MusicPlay1 extends AppCompatActivity
             setPre();
             setDiscAndLrc();
         }
-
         @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-
+        public void onServiceDisconnected(ComponentName componentName)
+        {
         }
     };
     public static Handler handler=null;
+    public static Handler playHandler=null;
+    public static Handler lrcHandler=null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -106,7 +108,40 @@ public class MusicPlay1 extends AppCompatActivity
 
                 currentTime.setText("0"+String.valueOf(minutes)+":"+currentSeconds);
                 totalTime.setText("0"+String.valueOf(TotalMinutes)+":"+TotalLeftSeconds);
-                lrcview.scrollToTime(currentSeconds,TotalSeconds);
+                //如果初始化过歌词的显示并且歌词处于显示状态则更新歌词
+                if(isInitLrc && lrcview.getVisibility()==View.VISIBLE)
+                lrcview.scrollToTime(currentPosition);
+            }
+        };
+        playHandler=new Handler()
+    {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch(msg.what)
+            {
+                //1为播放，0位暂停.
+                case 1:
+                    play.setImageResource(R.drawable.pause);
+                    break;
+                case 0:
+                    play.setImageResource(R.drawable.play);
+                    break;
+            }
+        }
+    };
+        lrcHandler=new Handler()
+        {
+            @Override
+            public void handleMessage(Message msg)
+            {
+                super.handleMessage(msg);
+                switch(msg.what)
+                {
+                    case 1:
+                        refreshlrc();
+                        break;
+                }
             }
         };
     }
@@ -125,8 +160,11 @@ public class MusicPlay1 extends AppCompatActivity
                      {
                          disc.setVisibility(View.INVISIBLE);
                          discBig.setVisibility(View.INVISIBLE);
-
-                         showlrc();
+                         if(!isInitLrc)
+                         {
+                             showlrc();
+                             isInitLrc=true;
+                         }
                          lrcview.setVisibility(View.VISIBLE);
                      }
                  }
@@ -157,50 +195,109 @@ public class MusicPlay1 extends AppCompatActivity
         if(!file.exists())
             Toast.makeText(this,"歌词不存在",Toast.LENGTH_SHORT).show();
         else {
-            lrcview.getLrc(file);
-            lrcview.initView();
+            lrcview.refreshView(file);
+        }
+    }
+    public void refreshlrc()
+    {
+        if(musicBinder.getMusic()!=null)
+        {
+            Log.d("musicName",musicBinder.getMusic().getMusicName());
+            String path = Utility.localMusicPath + "/lyric/" + musicBinder.getMusic().getCompleteMusicName();
+            path = path.replace(".mp3", ".lrc");
+            Log.d("lrcPath",path);
+            File file = new File(path);
+            if(!file.exists())
+                Toast.makeText(this,"歌词不存在",Toast.LENGTH_SHORT).show();
+            else {
+                lrcview.refreshView(file);
+            }
         }
     }
 
+    public void setLrcScroll()
+    {
+        lrcview.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+            @Override
+            public void onScrollChange(View view, int x, int y, int x1, int y1)
+            {
+                float currentPercent=(float)lrcview.getIndex(y);
+                int position=(int)currentPercent*musicBinder.getDuration();
+                musicBinder.seekTo(position);
+            }
+        });
+    }
     public void setPlay()
     {
+        if(musicBinder.isPlay())
+            play.setImageResource(R.drawable.pause);
         play.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View view) {
                 Intent intent=getIntent();
                 myMusic=(Music)intent.getSerializableExtra("music");
+                //如果没有音乐则开始播放。
                 if(musicBinder.getMusic()==null && myMusic!=null)
                 {
                     musicBinder.setMusic(myMusic);
                     musicBinder.play();
                     play.setImageResource(R.drawable.pause);
                 }
+                //如果已经有音乐正处于暂停状态则继续
                 else if(!musicBinder.isPlay() && musicBinder.getMusic()!=null)
                 {
                     musicBinder.continuePlay();
                     play.setImageResource(R.drawable.pause);
                 }
+                //如果是正在播放则暂停
                 else if(musicBinder.isPlay())
                 {
                     musicBinder.pausePlay();
                     play.setImageResource(R.drawable.play);
+                }
+                //如果是退出后重新进入则要重置音乐。
+                else if(musicBinder.getMusic()!=null && myMusic!=null && musicBinder.getMusic().getMusicName()!=myMusic.getMusicName())
+                {
+                    musicBinder.setMusic(myMusic);
+                    musicBinder.play();
                 }
             }
         });
     }
     public void setNext()
     {
-            if(musicBinder.getMusic()!=null)
+        next.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
             {
-                musicBinder.playNextMusic();
+                if(musicBinder.getMusic()!=null)
+                {
+                    musicBinder.playNextMusic();
+                }
             }
+        });
+
     }
     public void setPre()
     {
-            if(musicBinder.getMusic()!=null)
+        pre.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
             {
-                musicBinder.playPreMusic();
+                if(musicBinder.getMusic()!=null)
+                {
+                    musicBinder.playPreMusic();
+                }
             }
+        });
+
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(connection);
     }
 }

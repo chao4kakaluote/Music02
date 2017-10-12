@@ -1,8 +1,11 @@
 package com.example.administrator.music03.Utils;
 
+import android.content.Context;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
+
 import com.example.administrator.music03.R;
 import com.example.administrator.music03.entries.LrcMusic;
 import com.example.administrator.music03.entries.Music;
@@ -10,21 +13,27 @@ import com.example.administrator.music03.entries.Music;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+
+import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
+
 /**
  * Created by Administrator on 2017/10/9.
  */
 public class Utility
 {
     public static String localMusicPath= Environment.getExternalStorageDirectory().toString()+"/MIUI/music";
+    public static String downloadXMLlist="http://172.25.107.133:8080/de/res/xml";
     public static List<Music> getLocalMusicList()
     {
         Log.d("path",localMusicPath);
@@ -62,6 +71,7 @@ public class Utility
         }
         return list;
     }
+
 
     public static boolean checkIsMusicFile(String fName)
     {

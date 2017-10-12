@@ -16,17 +16,20 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-
 /**
  * Created by 饶建雄 on 2016/8/21.
  */
-public class LycicView extends ScrollView {
+public class LycicView extends ScrollView
+{
     LinearLayout rootView;
     LinearLayout lrcViewLayout;
 
     ArrayList<LrcMusic> lrcTextLsit = new ArrayList<LrcMusic>();
     ArrayList<Integer> heights = new ArrayList<Integer>();
     ArrayList<TextView> lrcTextViewList = new ArrayList<TextView>();
+
+    int width=0;
+    int height=0;
 
     public LycicView(Context context) {
         super(context);
@@ -40,7 +43,8 @@ public class LycicView extends ScrollView {
         super(context, attrs, defStyleAttr);
     }
 
-    public void getLrc(File file) {
+    public void getLrc(File file)
+    {
         try {
             FileInputStream fis = new FileInputStream(file);
             InputStreamReader isr = new InputStreamReader(fis, "utf-8");
@@ -55,6 +59,8 @@ public class LycicView extends ScrollView {
                         String lrcText = lrcAndTime[1];
                         LrcMusic lrcMusic = new LrcMusic(Utility.lrcData(time), lrcText);
                         lrcTextLsit.add(lrcMusic);
+                        Log.d("time",time);
+                        Log.d("text",lrcText);
                     }
                 }
             }
@@ -62,17 +68,59 @@ public class LycicView extends ScrollView {
             e.printStackTrace();
         }
     }
-
     public void initView()
     {
-       addFirstLayout();
-     //   addLrcView();
-     //   scrollTo(0,0);
+       addLayout();
     }
-    public void addFirstLayout()
+    public void refreshView(File file)
     {
+        if(lrcTextLsit!=null)
+            lrcTextLsit.clear();
+        if(heights!=null)
+            heights.clear();
+        if(file!=null && file.exists())
+        {
+            getLrc(file);
+            addLayout();
+        }
+    }
+    public void addLayout()
+    {
+        //重置
+        if(this!=null)
+            removeAllViews();
+        if(rootView!=null)
+            rootView.removeAllViews();
         rootView=new LinearLayout(getContext());
         rootView.setOrientation(LinearLayout.VERTICAL);
+        //得到高度，设置上下的两个布局
+        ViewTreeObserver vto1 = rootView.getViewTreeObserver();
+        vto1.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener()
+        {
+            @Override
+            public void onGlobalLayout()
+            {
+                height = LycicView.this.getHeight();
+                width = LycicView.this.getWidth();
+            }
+        });
+        LinearLayout blank1 = new LinearLayout(getContext());
+        LinearLayout blank2 = new LinearLayout(getContext());
+        //高度平分
+        LinearLayout.LayoutParams params1 = new LinearLayout.LayoutParams(500,400);
+        rootView.addView(blank1,params1);
+
+        if(lrcViewLayout!=null)
+            lrcViewLayout.removeAllViews();
+        if(heights.size()!=0)
+        {
+            heights.clear();
+        }
+        if(lrcTextViewList.size()!=0)
+        {
+            lrcTextViewList.clear();
+        }
+
         lrcViewLayout=new LinearLayout(getContext());
         lrcViewLayout.setOrientation(LinearLayout.VERTICAL);
         for(int i=0;i<lrcTextLsit.size();i++) {
@@ -82,8 +130,7 @@ public class LycicView extends ScrollView {
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
              params.gravity = Gravity.CENTER_HORIZONTAL;
             textView.setLayoutParams(params);
-            lrcViewLayout.addView(textView);
-            lrcTextViewList.add(textView);
+
 
             ViewTreeObserver vto = textView.getViewTreeObserver();
             final int index = i;
@@ -94,44 +141,18 @@ public class LycicView extends ScrollView {
                 {
                     textView.getViewTreeObserver().removeOnGlobalLayoutListener(this);//api 要在16以上 >=16
                     heights.add(index,textView.getHeight());//将高度添加到对应的item位置
+                    Log.d("textViewheight",String.valueOf(textView.getHeight()));
                 }
             });
+            lrcViewLayout.addView(textView);
+            lrcTextViewList.add(textView);
         }
         rootView.addView(lrcViewLayout);
+        //加上下面的布局
+   //     rootView.addView(blank2,params1);
         addView(rootView);
     }
-    public void addLrcView()
-    {
-        lrcViewLayout=new LinearLayout(getContext());
-        lrcViewLayout.setOrientation(LinearLayout.VERTICAL);
 
-        lrcViewLayout.removeAllViews();
-        for(int i=0;i<lrcTextLsit.size();i++)
-        {
-            final TextView textView=new TextView(getContext());
-            Log.d("lrctext",lrcTextLsit.get(i).getLrc());
-            textView.setText(lrcTextLsit.get(i).getLrc());
-//            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-//            params.gravity = Gravity.CENTER_HORIZONTAL;
-//           // textView.setLayoutParams(params);
-//            //对高度进行测量
-//            ViewTreeObserver vto = textView.getViewTreeObserver();
-//            final int index = i;
-//            vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener()
-//            {
-//                @Override
-//                public void onGlobalLayout()
-//                {
-//                    textView.getViewTreeObserver().removeOnGlobalLayoutListener(this);//api 要在16以上 >=16
-//                    heights.add(index,textView.getHeight());//将高度添加到对应的item位置
-//                }
-//            });
-            lrcTextViewList.add(textView);
-            lrcViewLayout.addView(textView);
-        }
-        rootView.addView(lrcViewLayout);
-        this.addView(rootView);
-    }
     public void scrollToTime(int currentTime,int TotalTime)
     {
         int index=(int)((float)currentTime/(float)TotalTime * lrcTextLsit.size());
@@ -148,20 +169,54 @@ public class LycicView extends ScrollView {
             }
         }
     }
+    public void scrollToTime(int currentTime)
+    {
+        if(currentTime==0)
+            scrollTo(0,0);
+        else {
+            int sum = 0;
+            int index = 0;
+            for (index = 0; index < lrcTextLsit.size(); index++) {
+                if (lrcTextLsit.get(index).getTime() >= currentTime) break;
+            }
+            Log.d("sum",String.valueOf(sum));
+            Log.d("currentTime",String.valueOf(currentTime));
+            scrollToIndex(index);
+            Log.d("lrcSize",String.valueOf(lrcTextViewList.size()));
+            for(int i=0;i<lrcTextViewList.size();i++)
+            {
+                lrcTextViewList.get(i).setTextColor(Color.WHITE);
+            }
+            if(index>=1)
+            lrcTextViewList.get(index-1).setTextColor(Color.BLUE);
+            else
+            lrcTextViewList.get(0).setTextColor(Color.BLUE);
+        }
+    }
     public void scrollToIndex(int index)
     {
-        if(index < 0){
-            scrollTo(0,0);
+        Log.d("index",String.valueOf(index));
+        int sum=0;
+        for(int i=0;i<index;i++)
+        {
+            sum+=heights.get(i);
         }
-        //计算index对应的textview的高度
-        if(index < heights.size()){
-            int sum = 0;
-            for(int i = 0;i<=index-1;i++){
-                sum+=heights.get(i);
-            }
-            //加上index这行高度的一半
-            sum+=heights.get(index)/2;
-            scrollTo(0,sum);
+        scrollTo(0,sum);
+    }
+    public int getIndex(int height)
+    {
+        int sum=0;
+        int i=0;
+        while(sum<=height && i<heights.size())
+        {
+            sum+=heights.get(i);
+            i++;
         }
+        return i;
+    }
+    //得到当前播放百分比
+    public float getCurrentPercent(int height)
+    {
+        return (float)getIndex(height)/(float)heights.size();
     }
 }

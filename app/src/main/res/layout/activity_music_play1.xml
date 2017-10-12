@@ -54,6 +54,7 @@
             android:layout_width="match_parent"
             android:layout_centerVertical="true"
             android:layout_centerHorizontal="true"
+            android:layout_marginTop="60dp"
             android:visibility="gone"/>
     </FrameLayout>
     <SeekBar
@@ -95,7 +96,7 @@
             android:layout_height="60dp"
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
-            android:src="@drawable/play_rdi_btn_play"
+            android:src="@drawable/play"
             />
         <ImageView
             android:id="@+id/playing_next"

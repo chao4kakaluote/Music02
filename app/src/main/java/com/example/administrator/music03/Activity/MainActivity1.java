@@ -9,6 +9,7 @@ import android.os.IBinder;
 import android.support.annotation.IdRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -18,21 +19,31 @@ import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
+import com.example.administrator.music03.Adapter.DownloadMusicAdapter;
 import com.example.administrator.music03.Adapter.LocalMusicAdapter;
 import com.example.administrator.music03.R;
 import com.example.administrator.music03.Utils.Utility;
 import com.example.administrator.music03.entries.Music;
 import com.example.administrator.music03.service.MusicPlayService;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 public class MainActivity1 extends AppCompatActivity
 {
     ListView  localList;
+    ListView  downloadList;
     RadioGroup radioGroup;
     RadioButton btn1;
     RadioButton btn2;
@@ -41,9 +52,12 @@ public class MainActivity1 extends AppCompatActivity
 
 
     private LocalMusicAdapter Localadapter;
+    private DownloadMusicAdapter downloadAdapter;
     private ArrayAdapter<String> Downloadadapter;
     private List<Music> musicLocalData=new ArrayList<>();
+    private List<Music> downloadListData=new ArrayList<>();
     private List<String> musicDownloadData=new ArrayList<>();
+
 
     private MusicPlayService.MusicControl musicBinder;
     private ServiceConnection connection=new ServiceConnection()
@@ -171,9 +185,66 @@ public class MainActivity1 extends AppCompatActivity
            localList.setAdapter(Localadapter);
     }
 
+    public void RequestDownloadList()
+    {
+            Utility.sendRequest(Utility.downloadXMLlist, new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    try {
+                        String responseText = response.body().string();
+                        if (!TextUtils.isEmpty(responseText)) {
+                            JSONArray musicArray = new JSONArray(responseText);
+                            for(int i=0;i<musicArray.length();i++) {
+                                JSONObject musicObject=musicArray.getJSONObject(i);
+                                Music music = new Music();
+                                music.setMusicName(musicObject.getString("name"));
+                                downloadListData.add(music);
+                            }
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            });
+    }
     public void setDownloadList()
     {
+            if(downloadListData!=null)
+            {
+                   downloadAdapter=new DownloadMusicAdapter(this,R.layout.downloadmusicitem,downloadListData,new DownloadMusicAdapter.OnListClickListener()
+                   {
+                       @Override
+                       public void onClickListPause(Music music)
+                       {
 
+                       }
+
+                       @Override
+                       public void onClickListPlay(Music music)
+                       {
+
+                       }
+
+                       @Override
+                       public void onClickListReplay(Music music)
+                       {
+
+                       }
+
+                       @Override
+                       public void onDownloadMusic(Music music)
+                       {
+
+                       }
+                   });
+            }
     }
 
     public void showSetBottomPic()
@@ -181,24 +252,23 @@ public class MainActivity1 extends AppCompatActivity
         if(musicBinder.getMusic()!=null) {
             layout.setVisibility(View.VISIBLE);
             //看是否存在图片文件，如果存在则设置该图片
-            String path=Utility.localMusicPath+"/album/"+musicBinder.getMusic().getMusicName()+"jpg";
-            File file=new File(path);
-            if(file.exists()) {
-                try {
-                    FileInputStream f = new FileInputStream(Utility.localMusicPath + "/album/" + musicBinder.getMusic().getMusicName() + "jpg");
-                    Bitmap bm = null;
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inSampleSize = 8;//图片的长宽都是原来的1/8
-                    BufferedInputStream bis = new BufferedInputStream(f);
-                    bm = BitmapFactory.decodeStream(bis, null, options);
-                    MusicImage.setImageBitmap(bm);
-                }
-                catch(Exception e)
-                {
-                    e.printStackTrace();
-                }
-            }
-
+//            String path=Utility.localMusicPath+"/album/"+musicBinder.getMusic().getMusicName()+"jpg";
+//            File file=new File(path);
+//            if(file.exists()) {
+//                try {
+//                    FileInputStream f = new FileInputStream(Utility.localMusicPath + "/album/" + musicBinder.getMusic().getMusicName() + "jpg");
+//                    Bitmap bm = null;
+//                    BitmapFactory.Options options = new BitmapFactory.Options();
+//                    options.inSampleSize = 8;//图片的长宽都是原来的1/8
+//                    BufferedInputStream bis = new BufferedInputStream(f);
+//                    bm = BitmapFactory.decodeStream(bis, null, options);
+//                    MusicImage.setImageBitmap(bm);
+//                }
+//                catch(Exception e)
+//                {
+//                    e.printStackTrace();
+//                }
+//            }
             MusicImage.setImageResource(R.drawable.music_disc);
             MusicImage.setOnClickListener(new View.OnClickListener() {
                 @Override
