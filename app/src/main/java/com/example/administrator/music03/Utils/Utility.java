@@ -34,6 +34,7 @@ public class Utility
 {
     public static String localMusicPath= Environment.getExternalStorageDirectory().toString()+"/MIUI/music";
     public static String downloadXMLlist="http://172.25.107.133:8080/de/res/xml";
+    public static String downloadMp3Url="http://172.25.107.133:8080/de/res/mp3/";
     public static List<Music> getLocalMusicList()
     {
         Log.d("path",localMusicPath);

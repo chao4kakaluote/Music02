@@ -24,6 +24,7 @@ import com.example.administrator.music03.Adapter.LocalMusicAdapter;
 import com.example.administrator.music03.R;
 import com.example.administrator.music03.Utils.Utility;
 import com.example.administrator.music03.entries.Music;
+import com.example.administrator.music03.service.DownloadSvc;
 import com.example.administrator.music03.service.MusicPlayService;
 
 import org.json.JSONArray;
@@ -58,7 +59,7 @@ public class MainActivity1 extends AppCompatActivity
     private List<Music> downloadListData=new ArrayList<>();
     private List<String> musicDownloadData=new ArrayList<>();
 
-
+    private DownloadSvc.DownloadBinder downloadBinder=null;
     private MusicPlayService.MusicControl musicBinder;
     private ServiceConnection connection=new ServiceConnection()
     {
@@ -67,6 +68,20 @@ public class MainActivity1 extends AppCompatActivity
         {
             musicBinder=(MusicPlayService.MusicControl)iBinder;
             showSetBottomPic();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName)
+        {
+
+        }
+    };
+    private ServiceConnection downloadConnection=new ServiceConnection()
+    {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder)
+        {
+             downloadBinder=(DownloadSvc.DownloadBinder)iBinder;
         }
 
         @Override
@@ -204,7 +219,9 @@ public class MainActivity1 extends AppCompatActivity
                                 Music music = new Music();
                                 music.setMusicName(musicObject.getString("name"));
                                 downloadListData.add(music);
+                                setDownloadList();
                             }
+
                         }
                     }
                     catch(Exception e)
@@ -216,6 +233,8 @@ public class MainActivity1 extends AppCompatActivity
     }
     public void setDownloadList()
     {
+        //绑定下载服务
+            bindDownloadService();
             if(downloadListData!=null)
             {
                    downloadAdapter=new DownloadMusicAdapter(this,R.layout.downloadmusicitem,downloadListData,new DownloadMusicAdapter.OnListClickListener()
@@ -223,28 +242,54 @@ public class MainActivity1 extends AppCompatActivity
                        @Override
                        public void onClickListPause(Music music)
                        {
-
+                           //如果是同一首音乐则暂停，不是则不管。
+                           if(musicBinder.getMusic()!=null && musicBinder.getMusic().getMusicName().equals(music.getMusicName()))
+                           {
+                               musicBinder.pausePlay();
+                           }
                        }
 
                        @Override
                        public void onClickListPlay(Music music)
                        {
-
+                           if(musicBinder.isPlay())
+                           {
+                               if(!musicBinder.getMusic().getMusicName().equals(music.getMusicName()))
+                               {
+                                   musicBinder.setMusic(music);
+                                   musicBinder.playOnline();
+                               }
+                           }
+                           //如果当前处于暂停状态则判断是否是同一首音乐或者当前未播放，是则继续，不是则重新播放。
+                           else if(!musicBinder.isPlay())
+                           {
+                               if(musicBinder.getMusic()==null || !musicBinder.getMusic().getMusicName().equals(music.getMusicName()))
+                               {
+                                   musicBinder.setMusic(music);
+                                   musicBinder.play();
+                               }
+                               else
+                               {
+                                   musicBinder.continuePlay();
+                               }
+                           }
                        }
 
                        @Override
                        public void onClickListReplay(Music music)
                        {
-
+                           musicBinder.setMusic(music);
+                           musicBinder.playOnline();
                        }
 
                        @Override
                        public void onDownloadMusic(Music music)
                        {
-
+                               downloadBinder.startDownload(Utility.downloadMp3Url+music.getCompleteMusicName());
                        }
                    });
             }
+            downloadList.setAdapter(downloadAdapter);
     }
 
     public void showSetBottomPic()
@@ -287,10 +332,17 @@ public class MainActivity1 extends AppCompatActivity
            startService(intent);
            bindService(intent,connection,BIND_AUTO_CREATE);
     }
-
+    //绑定下载服务
+    public void bindDownloadService()
+    {
+        Intent intent=new Intent(this,DownloadSvc.class);
+        startService(intent);
+        bindService(intent,downloadConnection,BIND_AUTO_CREATE);
+    }
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unbindService(connection);
+        unbindService(downloadConnection);
     }
 }

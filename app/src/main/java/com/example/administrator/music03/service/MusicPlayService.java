@@ -100,6 +100,29 @@ public class MusicPlayService extends Service
          //更新按钮
         updatePlayButton();
     }
+    public void playOnLineMusic()
+    {
+        try
+        {
+            if(myMediaPlayer==null)
+            {
+                myMediaPlayer=new MediaPlayer();
+            }
+            else
+            {
+                myMediaPlayer.release();
+                myMediaPlayer=new MediaPlayer();
+            }
+            myMediaPlayer.setDataSource("http://172.107.133:8080/de/res/mpp3/"+myMusic.getCompleteMusicName());
+            myMediaPlayer.prepare();
+            myMediaPlayer.start();
+            isPlaying=true;
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
     public void pausePlay()
     {
         myMediaPlayer.pause();
@@ -260,6 +283,10 @@ public class MusicPlayService extends Service
         {
             MusicPlayService.this.playMusic();
             Log.d("binderPlay","true");
+        }
+        public void playOnline()
+        {
+            MusicPlayService.this.playOnLineMusic();
         }
         public void pausePlay()
         {

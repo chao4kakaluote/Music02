@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.administrator.music03">
-
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -14,10 +14,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Activity.Login"></activity>
-        <activity android:name=".Activity.MainActivity"></activity>
+        <activity android:name=".Activity.Login" />
+        <activity android:name=".Activity.MainActivity" />
         <activity android:name=".Activity.SplashActivity" />
-        <activity android:name=".Activity.MusicPlay"></activity>
+        <activity android:name=".Activity.MusicPlay" />
 
         <service
             android:name=".service.MusicPlayService"
@@ -34,9 +34,11 @@
         </activity>
 
         <service
-            android:name=".service.DownloadService"
+            android:name=".service.DownloadSvc"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
+
+        <activity android:name=".Activity.FingerAuthen"></activity>
     </application>
 
 </manifest>
